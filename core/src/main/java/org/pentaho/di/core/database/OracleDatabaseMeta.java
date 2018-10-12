@@ -386,6 +386,7 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
         break;
       case ValueMetaInterface.TYPE_NUMBER:
       case ValueMetaInterface.TYPE_BIGNUMBER:
+      case ValueMetaInterface.TYPE_INTEGER: // TSW!
         retval.append( "NUMBER" );
         if ( length > 0 ) {
           retval.append( '(' ).append( length );
@@ -394,9 +395,6 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
           }
           retval.append( ')' );
         }
-        break;
-      case ValueMetaInterface.TYPE_INTEGER:
-        retval.append( "INTEGER" );
         break;
       case ValueMetaInterface.TYPE_STRING:
         if ( length >= DatabaseMeta.CLOB_LENGTH ) {

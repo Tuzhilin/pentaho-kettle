@@ -1,3 +1,4 @@
+// Patched by TSW for correct input/output number translation
 /*! ******************************************************************************
  *
  * Pentaho Data Integration
@@ -311,8 +312,14 @@ public class PostgreSQLDatabaseMeta extends BaseDatabaseMeta implements Database
     int type = v.getType();
     switch ( type ) {
       case ValueMetaInterface.TYPE_TIMESTAMP:
+        if ( supportsTimestampDataType() ) { // TSW!
+          retval += "TIMESTAMP";
+        } else {
+          retval += "DATE";
+        }
+        break;
       case ValueMetaInterface.TYPE_DATE:
-        retval += "TIMESTAMP";
+        retval += "DATE"; // TSW!
         break;
       case ValueMetaInterface.TYPE_BOOLEAN:
         if ( supportsBooleanDataType() ) {
@@ -330,9 +337,11 @@ public class PostgreSQLDatabaseMeta extends BaseDatabaseMeta implements Database
           retval += "BIGSERIAL";
         } else {
           if ( length > 0 ) {
-            if ( precision > 0 || length > 18 ) {
+            if ( precision != 0 || length > 18 ) {
               // Numeric(Precision, Scale): Precision = total length; Scale = decimal places
-              retval += "NUMERIC(" + ( length + precision ) + ", " + precision + ")";
+              retval += "NUMERIC(" + length;
+              if ( precision>0 ) retval += "," + precision;
+              retval += ")";
             } else {
               if ( length > 9 ) {
                 retval += "BIGINT";
@@ -344,9 +353,13 @@ public class PostgreSQLDatabaseMeta extends BaseDatabaseMeta implements Database
                 }
               }
             }
-
-          } else {
-            retval += "DOUBLE PRECISION";
+          } else { // TSW!
+            if ( type==ValueMetaInterface.TYPE_NUMBER )
+              retval += "DOUBLE PRECISION";
+            else if ( type==ValueMetaInterface.TYPE_INTEGER )
+              retval += "BIGINT";
+            else
+              retval += "NUMERIC";
           }
         }
         break;

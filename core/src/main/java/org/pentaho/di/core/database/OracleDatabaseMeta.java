@@ -323,10 +323,8 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
       tmpName = tmpName.substring( 1, tmpName.length() - 1 );
     }
 
-    int threeoh = tmpName.length() >= 30 ? 30 : tmpName.length();
-    tmpName = tmpName.substring( 0, threeoh );
-
-    tmpName += "_KTL"; // should always be shorter than 35 positions
+    tmpName += "_KTL"; // TSW
+    if ( tmpName.length() > 30 ) tmpName = tmpName.substring( 0, 30 ); // should always be shorter than 31 
 
     // put the quotes back if needed.
     //
@@ -345,13 +343,8 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
     sql += "UPDATE " + tablename + " SET " + tmpColumn.getName() + "=" + v.getName() + ";" + Const.CR;
     // drop the old column
     sql += getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon ) + ";" + Const.CR;
-    // create the wanted column
-    sql += getAddColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon ) + ";" + Const.CR;
-    // copy the data from the tmp column to the wanted column (again)
-    // All this to avoid the rename clause as this is not supported on all Oracle versions
-    sql += "UPDATE " + tablename + " SET " + v.getName() + "=" + tmpColumn.getName() + ";" + Const.CR;
-    // drop the temp column
-    sql += getDropColumnStatement( tablename, tmpColumn, tk, use_autoinc, pk, semicolon );
+    // use rename instead of add/update/drop
+    sql += "ALTER TABLE " + tablename + " RENAME COLUMN " + tmpColumn.getName() + " TO " + v.getName() + ";" + Const.CR;
 
     return sql;
   }
@@ -386,7 +379,6 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
         break;
       case ValueMetaInterface.TYPE_NUMBER:
       case ValueMetaInterface.TYPE_BIGNUMBER:
-      case ValueMetaInterface.TYPE_INTEGER: // TSW!
         retval.append( "NUMBER" );
         if ( length > 0 ) {
           retval.append( '(' ).append( length );
@@ -396,6 +388,12 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
           retval.append( ')' );
         }
         break;
+      case ValueMetaInterface.TYPE_INTEGER:
+        if ( length <= 0 || length == 38 ) // TSW
+          retval.append( "INTEGER" );
+        else
+          retval.append( "NUMBER" ).append( '(' ).append( length ).append( ')' );
+        break;
       case ValueMetaInterface.TYPE_STRING:
         if ( length >= DatabaseMeta.CLOB_LENGTH ) {
           retval.append( "CLOB" );
@@ -403,10 +401,10 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
           if ( length == 1 ) {
             retval.append( "CHAR(1)" );
           } else if ( length > 0 && length <= getMaxVARCHARLength() ) {
-            retval.append( "VARCHAR2(" ).append( length ).append( ')' );
+            retval.append( "VARCHAR2(" ).append( length ).append( " CHAR)" );
           } else {
             if ( length <= 0 ) {
-              retval.append( "VARCHAR2(2000)" ); // We don't know, so we just use the maximum...
+              retval.append( "VARCHAR2(2000 CHAR)" ); // We don't know, so we just use the maximum...
             } else {
               retval.append( "CLOB" );
             }

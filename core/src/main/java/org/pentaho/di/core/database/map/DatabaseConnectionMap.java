@@ -52,7 +52,7 @@ public class DatabaseConnectionMap {
 
   private static final DatabaseConnectionMap connectionMap = new DatabaseConnectionMap();
 
-  public static synchronized DatabaseConnectionMap getInstance() {
+  public static DatabaseConnectionMap getInstance() {
     return connectionMap;
   }
 

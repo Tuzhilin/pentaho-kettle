@@ -38,13 +38,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LoggingRegistry {
-  private static LoggingRegistry registry = new LoggingRegistry();
+  private static LoggingRegistry registry = null;
   private Map<String, LoggingObjectInterface> map;
   private Map<String, LogChannelFileWriterBuffer> fileWriterBuffers;
   private Map<String, List<String>> childrenMap;
   private Date lastModificationTime;
   private int maxSize;
-  private final int DEFAULT_MAX_SIZE = 10000;
+  private final int DEFAULT_MAX_SIZE = 1000; // TSW: на 10000 повисает вообще конкретно
 
   private Object syncObject = new Object();
 
@@ -58,7 +58,15 @@ public class LoggingRegistry {
   }
 
   public static LoggingRegistry getInstance() {
-    return registry;
+      // TSW: ламер который использовал инициализацию в static не в курсе что в этот момент kettle.properties еще не скопированы в system
+      if (registry == null) {
+          synchronized (LoggingRegistry.class) {
+              if (registry == null) {
+                  registry = new LoggingRegistry();
+              }
+          }
+      }
+      return registry;
   }
 
   public String registerLoggingSource( Object object ) {

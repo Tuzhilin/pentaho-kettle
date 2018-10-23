@@ -57,9 +57,13 @@ public class XMLHandlerCache {
     cacheHits = 0;
   }
 
-  public static synchronized XMLHandlerCache getInstance() {
+  public static XMLHandlerCache getInstance() {
     if ( instance == null ) {
-      return instance = new XMLHandlerCache();
+      synchronized (XMLHandlerCache.class) {
+        if ( instance == null ) {
+          instance = new XMLHandlerCache();
+        }
+      }
     }
     return instance;
   }

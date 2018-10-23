@@ -268,7 +268,7 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
   public String getAddColumnStatement( String tablename, ValueMetaInterface v, String tk, boolean use_autoinc,
     String pk, boolean semicolon ) {
     return "ALTER TABLE "
-      + tablename + " ADD ( " + getFieldDefinition( v, tk, pk, use_autoinc, true, false ) + " ) ";
+      + tablename + " ADD ( " + getFieldDefinition( v, tk, pk, use_autoinc, true, false ) + " )";
   }
 
   /**
@@ -291,7 +291,7 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
   @Override
   public String getDropColumnStatement( String tablename, ValueMetaInterface v, String tk, boolean use_autoinc,
     String pk, boolean semicolon ) {
-    return "ALTER TABLE " + tablename + " DROP ( " + v.getName() + " ) " + Const.CR;
+    return "ALTER TABLE " + tablename + " DROP ( " + v.getName() + " )";
   }
 
   /**

@@ -241,10 +241,13 @@ public class DBCache {
     if ( dbCache != null ) {
       return dbCache;
     }
-    try {
-      dbCache = new DBCache();
-    } catch ( KettleFileException kfe ) {
-      throw new RuntimeException( "Unable to create the database cache: " + kfe.getMessage() );
+    synchronized (DBCache.class) {
+      if ( dbCache == null )
+      try {
+        dbCache = new DBCache();
+      } catch ( KettleFileException kfe ) {
+        throw new RuntimeException( "Unable to create the database cache: " + kfe.getMessage() );
+      }
     }
     return dbCache;
   }

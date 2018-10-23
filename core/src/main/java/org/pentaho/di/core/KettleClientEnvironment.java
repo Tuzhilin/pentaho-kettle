@@ -214,11 +214,12 @@ public class KettleClientEnvironment {
    * @return
    */
   public static KettleClientEnvironment getInstance() {
-
-    if ( KettleClientEnvironment.instance == null ) {
-      KettleClientEnvironment.instance = new KettleClientEnvironment();
+    if ( instance == null ) {
+	synchronized (KettleClientEnvironment.class) {
+	    if ( instance == null )
+		instance = new KettleClientEnvironment();
+	}
     }
-
-    return KettleClientEnvironment.instance;
+    return instance;
   }
 }

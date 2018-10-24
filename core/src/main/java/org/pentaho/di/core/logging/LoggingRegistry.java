@@ -58,7 +58,6 @@ public class LoggingRegistry {
   }
 
   public static LoggingRegistry getInstance() {
-      // TSW: ламер который использовал инициализацию в static не в курсе что в этот момент kettle.properties еще не скопированы в system
       if (registry == null) {
           synchronized (LoggingRegistry.class) {
               if (registry == null) {
@@ -71,6 +70,9 @@ public class LoggingRegistry {
 
   public String registerLoggingSource( Object object ) {
     synchronized ( this.syncObject ) {
+
+      // TSW: ламер который убрал эту строку не в курсе что в момент исполнения конструктор kettle.properties еще не скопированы в system
+      this.maxSize = Const.toInt( EnvUtil.getSystemProperty( "KETTLE_MAX_LOGGING_REGISTRY_SIZE" ), DEFAULT_MAX_SIZE );
 
       LoggingObject loggingSource = new LoggingObject( object );
 

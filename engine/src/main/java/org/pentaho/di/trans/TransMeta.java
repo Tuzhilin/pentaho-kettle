@@ -1380,6 +1380,9 @@ public class TransMeta extends AbstractMeta
    * @return The list of the preceding steps
    */
   public List<StepMeta> findPreviousSteps( StepMeta stepMeta, boolean info ) {
+    if ( stepMeta == null ) {
+      return new ArrayList<>();
+    }
     String cacheKey = getStepMetaCacheKey( stepMeta, info );
     List<StepMeta> previousSteps = previousStepCache.get( cacheKey );
     if ( previousSteps == null ) {
@@ -1811,7 +1814,7 @@ public class TransMeta extends AbstractMeta
 
     // Resume the regular program...
 
-    List<StepMeta> prevSteps = getPreviousSteps( stepMeta );
+    List<StepMeta> prevSteps = findPreviousSteps( stepMeta, false );
 
     int nrPrevious = prevSteps.size();
 
@@ -1921,6 +1924,12 @@ public class TransMeta extends AbstractMeta
    *           the kettle step exception
    */
   public RowMetaInterface getPrevStepFields( StepMeta stepMeta, ProgressMonitorListener monitor ) throws KettleStepException {
+    return getPrevStepFields( stepMeta, null, monitor );
+  }
+
+  public RowMetaInterface getPrevStepFields(
+	    StepMeta stepMeta, final String stepName, ProgressMonitorListener  monitor )
+	    throws KettleStepException {
     clearStepFieldsCachce();
     RowMetaInterface row = new RowMeta();
 
@@ -1936,6 +1945,9 @@ public class TransMeta extends AbstractMeta
     StepMeta prevStepMeta = null;
     for ( int i = 0; i < nrPrevSteps; i++ ) {
       prevStepMeta = prevSteps.get( i );
+      if  ( stepName != null && !stepName.equalsIgnoreCase( prevStepMeta.getName() ) ) {
+          continue;
+      }
 
       if ( monitor != null ) {
         monitor.subTask(
@@ -2042,9 +2054,10 @@ public class TransMeta extends AbstractMeta
     // Go get the fields...
     //
     RowMetaInterface before = row.clone();
-    compatibleGetStepFields( stepint, row, name, inform, nextStep, this );
+    RowMetaInterface[] clonedInfo = cloneRowMetaInterfaces( inform );
+    compatibleGetStepFields( stepint, row, name, clonedInfo, nextStep, this );
     if ( !isSomethingDifferentInRow( before, row ) ) {
-      stepint.getFields( before, name, inform, nextStep, this, repository, metaStore );
+      stepint.getFields( before, name, clonedInfo, nextStep, this, repository, metaStore );
       // pass the clone object to prevent from spoiling data by other steps
       row = before;
     }
@@ -3729,6 +3742,7 @@ public class TransMeta extends AbstractMeta
    * @return true if a loop has been found, false if no loop is found.
    */
   public boolean hasLoop( StepMeta stepMeta ) {
+    clearLoopCache();
     return hasLoop( stepMeta, null );
   }
 
@@ -4538,7 +4552,7 @@ public class TransMeta extends AbstractMeta
           stop_checking = true;
         }
 
-        if ( isStepUsedInTransHops( stepMeta ) ) {
+        if ( isStepUsedInTransHops( stepMeta ) || getSteps().size() == 1 ) {
           // Get the input & output steps!
           // Copy to arrays:
           String[] input = getPrevStepNames( stepMeta );
@@ -6336,5 +6350,15 @@ public class TransMeta extends AbstractMeta
 
   private static String getStepMetaCacheKey( StepMeta stepMeta, boolean info ) {
     return String.format( "%1$b-%2$s-%3$s", info, stepMeta.getStepID(), stepMeta.toString() );
+  }
+
+  private static RowMetaInterface[] cloneRowMetaInterfaces( RowMetaInterface[] inform ) {
+    RowMetaInterface[] cloned = inform.clone();
+    for ( int i = 0; i < cloned.length; i++ ) {
+      if ( cloned[i] != null ) {
+        cloned[i] = cloned[i].clone();
+      }
+    }
+    return cloned;
   }
 }

@@ -64,7 +64,7 @@ import org.pentaho.di.resource.ResourceEntry;
 import org.pentaho.di.resource.ResourceEntry.ResourceType;
 import org.pentaho.di.resource.ResourceNamingInterface;
 import org.pentaho.di.resource.ResourceReference;
-import org.pentaho.di.trans.StepWithMappingMeta;
+//import org.pentaho.di.trans.StepWithMappingMeta;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.TransMeta.TransformationType;
@@ -646,7 +646,7 @@ public class JobExecutorMeta extends BaseStepMeta implements StepMetaInterface, 
             }
           }
           if ( mappingJobMeta == null ) {
-            mappingJobMeta = new JobMeta( null, realFilename, rep, metaStore, null );
+            mappingJobMeta = new JobMeta( tmpSpace, realFilename, rep, metaStore, null );
             LogChannel.GENERAL.logDetailed( "Loading job from repository", "Job was loaded from XML file ["
               + realFilename + "]" );
           }
@@ -680,11 +680,11 @@ public class JobExecutorMeta extends BaseStepMeta implements StepMetaInterface, 
         } else {
           // rep is null, let's try loading by filename
           try {
-            mappingJobMeta = new JobMeta( null, realDirectory + "/" + realJobname, rep, metaStore, null );
+            mappingJobMeta = new JobMeta( tmpSpace, realDirectory + "/" + realJobname, rep, metaStore, null );
           } catch ( KettleException ke ) {
             try {
               // add .kjb extension and try again
-              mappingJobMeta = new JobMeta( null,
+              mappingJobMeta = new JobMeta( tmpSpace,
                   realDirectory + "/" + realJobname + "." + Const.STRING_JOB_DEFAULT_EXT, rep, metaStore, null );
             } catch ( KettleException ke2 ) {
               throw new KettleException( BaseMessages.getString(
@@ -704,7 +704,7 @@ public class JobExecutorMeta extends BaseStepMeta implements StepMetaInterface, 
     }
 
     // Pass some important information to the mapping transformation metadata:
-
+/* TSW: rollback SP-4253
     //  When the child parameter does exist in the parent parameters, overwrite the child parameter by the
     // parent parameter.
     StepWithMappingMeta.replaceVariableValues( mappingJobMeta, space );
@@ -713,6 +713,8 @@ public class JobExecutorMeta extends BaseStepMeta implements StepMetaInterface, 
       // variables from the transformation?' option is checked)
       StepWithMappingMeta.addMissingVariables( mappingJobMeta, space );
     }
+*/
+    mappingJobMeta.copyVariablesFrom( space );
     mappingJobMeta.setRepository( rep );
     mappingJobMeta.setMetaStore( metaStore );
     mappingJobMeta.setFilename( mappingJobMeta.getFilename() );

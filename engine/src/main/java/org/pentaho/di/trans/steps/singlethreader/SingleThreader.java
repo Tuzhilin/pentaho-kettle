@@ -152,6 +152,38 @@ public class SingleThreader extends BaseStep implements StepInterface {
     }
   }
 
+  private void passParameters() throws KettleException {
+
+    String[] parameters;
+    String[] parameterValues;
+
+    if ( meta.isPassingAllParameters() ) {
+      // We pass the values for all the parameters from the parent transformation
+      //
+      parameters = getData().mappingTransMeta.listParameters();
+      parameterValues = new String[parameters.length];
+      for ( int i = 0; i < parameters.length; i++ ) {
+        parameterValues[i] = getVariable( parameters[i] );
+      }
+    } else {
+      // We pass down the listed variables with the specified values...
+      //
+      parameters = meta.getParameters();
+      parameterValues = new String[parameters.length];
+      for ( int i = 0; i < parameters.length; i++ ) {
+        parameterValues[i] = environmentSubstitute( meta.getParameterValues()[i] );
+      }
+    }
+
+    for ( int i = 0; i < parameters.length; i++ ) {
+      String value = Const.NVL( parameterValues[i], "" );
+
+      getData().mappingTrans.setParameterValue( parameters[i], value );
+    }
+
+    getData().mappingTrans.activateParameters();
+  }
+
   public void prepareMappingExecution() throws KettleException {
     SingleThreaderData singleThreaderData = getData();
     // Set the type to single threaded in case the user forgot...
@@ -163,10 +195,11 @@ public class SingleThreader extends BaseStep implements StepInterface {
 
     // Pass the parameters down to the sub-transformation.
     //
-    StepWithMappingMeta
+/*    StepWithMappingMeta
       .activateParams( getData().mappingTrans, getData().mappingTrans, this, getData().mappingTrans.listParameters(),
         meta.getParameters(), meta.getParameterValues() );
-    getData().mappingTrans.activateParameters();
+    getData().mappingTrans.activateParameters();*/
+    passParameters();
 
     // Disable thread priority managment as it will slow things down needlessly.
     // The single threaded engine doesn't use threads and doesn't need row locking.
@@ -260,7 +293,7 @@ public class SingleThreader extends BaseStep implements StepInterface {
         // Pass the repository down to the metadata object...
         //
         meta.setRepository( getTransMeta().getRepository() );
-        singleThreaderData.mappingTransMeta = SingleThreaderMeta.loadSingleThreadedTransMeta( meta, meta.getRepository(), this, meta.isPassingAllParameters() );
+        singleThreaderData.mappingTransMeta = SingleThreaderMeta.loadSingleThreadedTransMeta( meta, meta.getRepository(), this );
         if ( singleThreaderData.mappingTransMeta != null ) { // Do we have a mapping at all?
 
           // Validate the inject and retrieve step names

@@ -59,7 +59,7 @@ public class ReportSubjectLocation {
   @Override
   public String toString() {
     if ( Utils.isEmpty( filename ) ) {
-      String dir = directory.toString();
+      String dir = directory==null ? "." : directory.toString(); // TSW
       if ( dir.endsWith( "/" ) ) {
         return dir + name + " (" + objectType.getTypeDescription() + ")";
       } else {

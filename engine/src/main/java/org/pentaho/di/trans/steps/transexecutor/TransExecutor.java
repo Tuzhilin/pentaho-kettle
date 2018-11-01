@@ -256,7 +256,11 @@ public class TransExecutor extends BaseStep implements StepInterface {
     executorTrans.setLogLevel( getLogLevel() );
     executorTrans.setArguments( getTrans().getArguments() );
 
+    if ( meta.getParameters().isInheritingAllVariables() ) {
+      executorTrans.shareVariablesWith( this );
+    }
     executorTrans.setInternalKettleVariables( this );
+    executorTrans.copyParametersFrom( getData().getExecutorTransMeta() );
 
     executorTrans.setPreview( getTrans().isPreview() );
 
@@ -272,9 +276,37 @@ public class TransExecutor extends BaseStep implements StepInterface {
 
     Trans internalTrans = getData().getExecutorTrans();
 
-    StepWithMappingMeta.activateParams( internalTrans, internalTrans, this, internalTrans.listParameters(),
-      parameters.getVariable(), parameters.getInput() );
+    internalTrans.clearParameters();
 
+    String[] parameterNames = internalTrans.listParameters();
+    for ( int i = 0; i < parameters.getVariable().length; i++ ) {
+      String variable = parameters.getVariable()[ i ];
+      String fieldName = parameters.getField()[ i ];
+      String inputValue = parameters.getInput()[ i ];
+
+      String value;
+      // Take the value from an input row or from a static value?
+      if ( !Utils.isEmpty( fieldName ) ) {
+        int idx = getInputRowMeta().indexOfValue( fieldName );
+        if ( idx < 0 ) {
+          throw new KettleException( BaseMessages.getString(
+            PKG, "TransExecutor.Exception.UnableToFindField", fieldName ) );
+        }
+
+        value = getData().groupBuffer.get( 0 ).getString( idx, "" );
+      } else {
+        value = environmentSubstitute( inputValue );
+      }
+
+      // See if this is a parameter or just a variable...
+      if ( Const.indexOfString( variable, parameterNames ) < 0 ) {
+        internalTrans.setVariable( variable, Const.NVL( value, "" ) );
+      } else {
+        internalTrans.setParameterValue( variable, Const.NVL( value, "" ) );
+      }
+    }
+
+    internalTrans.activateParameters();
   }
 
   @VisibleForTesting
@@ -410,7 +442,7 @@ public class TransExecutor extends BaseStep implements StepInterface {
 
   @VisibleForTesting
   TransMeta loadExecutorTransMeta() throws KettleException {
-    return TransExecutorMeta.loadMappingMeta( meta, meta.getRepository(), meta.getMetaStore(), this, meta.getParameters().isInheritingAllVariables() );
+    return TransExecutorMeta.loadMappingMeta( meta, meta.getRepository(), meta.getMetaStore(), this );
   }
 
   public void dispose( StepMetaInterface smi, StepDataInterface sdi ) {

@@ -42,6 +42,7 @@ import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.TransStepUtil;
+import org.pentaho.di.trans.steps.mapping.MappingParameters;
 import org.pentaho.di.trans.steps.mapping.MappingValueRename;
 import org.pentaho.di.trans.steps.mappinginput.MappingInput;
 import org.pentaho.di.trans.steps.mappingoutput.MappingOutput;
@@ -134,6 +135,41 @@ public class SimpleMapping extends BaseStep implements StepInterface {
     }
   }
 
+  private void setMappingParameters() throws KettleException {
+    MappingParameters mappingParameters = meta.getMappingParameters();
+    if ( mappingParameters != null ) {
+
+      String[] parameters;
+      String[] parameterValues;
+
+      if ( mappingParameters.isInheritingAllVariables() ) {
+        // We pass the values for all the parameters from the parent transformation
+        //
+        parameters = getData().mappingTransMeta.listParameters();
+        parameterValues = new String[parameters.length];
+        for ( int i = 0; i < parameters.length; i++ ) {
+          parameterValues[i] = getVariable( parameters[i] );
+        }
+      } else {
+        // We pass down the listed variables with the specified values...
+        //
+        parameters = mappingParameters.getVariable();
+        parameterValues = new String[parameters.length];
+        for ( int i = 0; i < parameters.length; i++ ) {
+          parameterValues[i] = environmentSubstitute( mappingParameters.getInputField()[i] );
+        }
+      }
+
+      for ( int i = 0; i < parameters.length; i++ ) {
+        String value = Const.NVL( parameterValues[i], "" );
+
+        getData().mappingTrans.setParameterValue( parameters[i], value );
+      }
+
+      getData().mappingTrans.activateParameters();
+    }
+  }
+
   public void prepareMappingExecution() throws KettleException {
 
     SimpleMappingData simpleMappingData = getData();
@@ -142,8 +178,10 @@ public class SimpleMapping extends BaseStep implements StepInterface {
 
     // Set the parameters values in the mapping.
     //
-    StepWithMappingMeta.activateParams( simpleMappingData.mappingTrans, simpleMappingData.mappingTrans, this, simpleMappingData.mappingTransMeta.listParameters(),
-      meta.getMappingParameters().getVariable(), meta.getMappingParameters().getInputField() );
+/*    StepWithMappingMeta.activateParams( simpleMappingData.mappingTrans, simpleMappingData.mappingTrans, this, simpleMappingData.mappingTransMeta.listParameters(),
+      meta.getMappingParameters().getVariable(), meta.getMappingParameters().getInputField() );*/
+    setMappingParameters();
+
     if ( simpleMappingData.mappingTransMeta.getTransformationType() != TransformationType.Normal ) {
       simpleMappingData.mappingTrans.getTransMeta().setUsingThreadPriorityManagment( false );
     }
@@ -245,7 +283,7 @@ public class SimpleMapping extends BaseStep implements StepInterface {
         //
         meta.setRepository( getTransMeta().getRepository() );
         simpleMappingData.mappingTransMeta =
-            SimpleMappingMeta.loadMappingMeta( meta, meta.getRepository(), meta.getMetaStore(), this, meta.getMappingParameters().isInheritingAllVariables() );
+            SimpleMappingMeta.loadMappingMeta( meta, meta.getRepository(), meta.getMetaStore(), this/*, meta.getMappingParameters().isInheritingAllVariables()*/ );
         if ( simpleMappingData.mappingTransMeta != null ) { // Do we have a mapping at all?
 
           // OK, now prepare the execution of the mapping.

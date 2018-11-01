@@ -75,10 +75,8 @@ public abstract class StepWithMappingMeta extends BaseStepMeta implements HasRep
     TransMeta mappingTransMeta = null;
 
     CurrentDirectoryResolver r = new CurrentDirectoryResolver();
-    // send parentVariables = null we don't need it here for resolving resolveCurrentDirectory.
-    // Otherwise we destroy child variables and the option "Inherit all variables from the transformation" is enabled always.
     VariableSpace tmpSpace =
-      r.resolveCurrentDirectory( executorMeta.getSpecificationMethod(), null, rep, executorMeta.getParentStepMeta(),
+      r.resolveCurrentDirectory( executorMeta.getSpecificationMethod(), space, rep, executorMeta.getParentStepMeta(),
         executorMeta.getFileName() );
 
     switch ( executorMeta.getSpecificationMethod() ) {
@@ -172,7 +170,7 @@ public abstract class StepWithMappingMeta extends BaseStepMeta implements HasRep
     if ( mappingTransMeta == null ) {  //skip warning
       return null;
     }
-
+/* Rollback SP-4012
     //  When the child parameter does exist in the parent parameters, overwrite the child parameter by the
     // parent parameter.
     replaceVariableValues( mappingTransMeta, space );
@@ -180,6 +178,10 @@ public abstract class StepWithMappingMeta extends BaseStepMeta implements HasRep
       // All other parent parameters need to get copied into the child parameters  (when the 'Inherit all
       // variables from the transformation?' option is checked)
       addMissingVariables( mappingTransMeta, space );
+    }*/
+    // Pass some important information to the mapping transformation metadata:
+    if ( share ) {
+      mappingTransMeta.copyVariablesFrom( space );
     }
     mappingTransMeta.setRepository( rep );
     mappingTransMeta.setMetaStore( metaStore );
@@ -335,10 +337,10 @@ public abstract class StepWithMappingMeta extends BaseStepMeta implements HasRep
                       mappingTransMeta, definitions, resourceNamingInterface, repository, metaStore );
 
       // To get a relative path to it, we inject
-      // ${Internal.Entry.Current.Directory}
+      // ${Internal.Transformation.Filename.Directory}
       //
       String newFilename =
-              "${" + Const.INTERNAL_VARIABLE_ENTRY_CURRENT_DIRECTORY + "}/" + proposedNewFilename;
+              "${" + Const.INTERNAL_VARIABLE_TRANSFORMATION_FILENAME_DIRECTORY + "}/" + proposedNewFilename;
 
       // Set the correct filename inside the XML.
       //

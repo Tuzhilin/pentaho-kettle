@@ -1662,31 +1662,30 @@ public class DatabaseMeta extends SharedObjectBase implements Cloneable, XMLInte
   public String getAddColumnStatement( String tablename, ValueMetaInterface v, String tk, boolean use_autoinc,
     String pk, boolean semicolon ) {
     String retval = databaseInterface.getAddColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
-    retval += Const.CR;
     if ( semicolon ) {
-      retval += ";" + Const.CR;
+      retval += ";";
     }
+    retval += Const.CR;
     return retval;
   }
 
   public String getDropColumnStatement( String tablename, ValueMetaInterface v, String tk, boolean use_autoinc,
     String pk, boolean semicolon ) {
     String retval = databaseInterface.getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
-    retval += Const.CR;
     if ( semicolon ) {
-      retval += ";" + Const.CR;
+      retval += ";";
     }
+    retval += Const.CR;
     return retval;
   }
 
   public String getModifyColumnStatement( String tablename, ValueMetaInterface v, String tk, boolean use_autoinc,
     String pk, boolean semicolon ) {
     String retval = databaseInterface.getModifyColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon );
-    retval += Const.CR;
     if ( semicolon ) {
-      retval += ";" + Const.CR;
+      retval += ";";
     }
-
+    retval += Const.CR;
     return retval;
   }
 

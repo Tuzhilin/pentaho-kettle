@@ -22,8 +22,6 @@
 
 package org.pentaho.di.trans.steps.excelinput;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,7 +29,6 @@ import java.util.TimeZone;
 
 import org.apache.commons.vfs2.FileObject;
 import org.pentaho.di.core.Const;
-import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.ResultFile;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.exception.KettleException;
@@ -45,6 +42,8 @@ import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.spreadsheet.KCell;
 import org.pentaho.di.core.spreadsheet.KCellType;
 import org.pentaho.di.core.spreadsheet.KSheet;
+import org.pentaho.di.core.util.EnvUtil;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
@@ -72,8 +71,6 @@ public class ExcelInput extends BaseStep implements StepInterface {
   private ExcelInputMeta meta;
 
   private ExcelInputData data;
-
-  private FileInputStream fpis;
 
   public ExcelInput( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
     Trans trans ) {
@@ -190,8 +187,8 @@ public class ExcelInput extends BaseStep implements StepInterface {
           sourceMetaCopy.setCurrencySymbol( field.getCurrencySymbol() );
 
           switch ( targetMeta.getType() ) {
-          // Use case: we find a numeric value: convert it using the supplied format to the desired data type...
-          //
+            // Use case: we find a numeric value: convert it using the supplied format to the desired data type...
+            //
             case ValueMetaInterface.TYPE_NUMBER:
             case ValueMetaInterface.TYPE_INTEGER:
               switch ( field.getType() ) {
@@ -393,13 +390,11 @@ public class ExcelInput extends BaseStep implements StepInterface {
           } catch ( KettleFileException e ) {
             throw new KettleException( BaseMessages.getString(
               PKG, "ExcelInput.Exception.CanNotCreateFileObject", fileValue ), e );
-
           }
 
           // Grab another row
           fileRow = getRowFrom( rowSet );
         }
-
       }
 
       handleMissingFiles();
@@ -420,9 +415,9 @@ public class ExcelInput extends BaseStep implements StepInterface {
     // in this case we have to stop a row "earlier", since we start a row number 0 !!!
     if ( ( meta.getRowLimit() > 0 && data.rownr > meta.getRowLimit() )
       || ( meta.readAllSheets() && meta.getRowLimit() > 0 && data.defaultStartRow == 0 && data.rownr > meta
-        .getRowLimit() - 1 )
+      .getRowLimit() - 1 )
       || ( !meta.readAllSheets() && meta.getRowLimit() > 0 && data.startRow[data.sheetnr] == 0 && data.rownr > meta
-        .getRowLimit() - 1 ) ) {
+      .getRowLimit() - 1 ) ) {
       // The close of the openFile is in dispose()
       if ( log.isDetailed() ) {
         logDetailed( BaseMessages.getString( PKG, "ExcelInput.Log.RowLimitReached", "" + meta.getRowLimit() ) );
@@ -466,7 +461,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
   private void handleMissingFiles() throws KettleException {
     List<FileObject> nonExistantFiles = data.files.getNonExistantFiles();
 
-    if ( nonExistantFiles.size() != 0 ) {
+    if ( !nonExistantFiles.isEmpty() ) {
       String message = FileInputList.getRequiredFilesDescription( nonExistantFiles );
       if ( log.isBasic() ) {
         logBasic( BaseMessages.getString( PKG, "ExcelInput.Log.RequiredFilesTitle" ), BaseMessages.getString(
@@ -481,11 +476,10 @@ public class ExcelInput extends BaseStep implements StepInterface {
         throw new KettleException( BaseMessages.getString(
           PKG, "ExcelInput.Exception.MissingRequiredFiles", message ) );
       }
-
     }
 
     List<FileObject> nonAccessibleFiles = data.files.getNonAccessibleFiles();
-    if ( nonAccessibleFiles.size() != 0 ) {
+    if ( !nonAccessibleFiles.isEmpty() ) {
       String message = FileInputList.getRequiredFilesDescription( nonAccessibleFiles );
       if ( log.isBasic() ) {
         logBasic( BaseMessages.getString( PKG, "ExcelInput.Log.RequiredFilesTitle" ), BaseMessages.getString(
@@ -500,7 +494,6 @@ public class ExcelInput extends BaseStep implements StepInterface {
         throw new KettleException( BaseMessages.getString(
           PKG, "ExcelInput.Exception.RequiredFilesNotAccessible", message ) );
       }
-
     }
   }
 
@@ -539,7 +532,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
           data.rootUriName = data.file.getName().getRootURI();
         }
         if ( meta.getSizeField() != null && meta.getSizeField().length() > 0 ) {
-          data.size = new Long( data.file.getContent().getSize() );
+          data.size = data.file.getContent().getSize();
         }
 
         if ( meta.isAddResultFile() ) {
@@ -554,8 +547,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
             + data.filenr + " : " + data.filename ) );
         }
 
-        fpis = new FileInputStream( data.filename );
-        data.workbook = WorkbookFactory.getWorkbook( meta.getSpreadSheetType(), fpis, meta.getEncoding() );
+        data.workbook = WorkbookFactory.getWorkbook( meta.getSpreadSheetType(), data.filename, meta.getEncoding() );
 
         data.errorHandler.handleFile( data.file );
         // Start at the first sheet again...
@@ -657,7 +649,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
         data.rownr = -1;
 
         // no previous row yet, don't take it from the previous sheet!
-        // (that whould be plain wrong!)
+        // (that would be plain wrong!)
         data.previousRow = null;
 
         // Perhaps it was the last sheet?
@@ -711,7 +703,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
   }
 
   private void initErrorHandling() {
-    List<FileErrorHandler> errorHandlers = new ArrayList<FileErrorHandler>( 2 );
+    List<FileErrorHandler> errorHandlers = new ArrayList<>( 2 );
 
     if ( meta.getLineNumberFilesDestinationDirectory() != null ) {
       errorHandlers.add( new FileErrorHandlerContentLineNumber(
@@ -721,7 +713,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
     if ( meta.getErrorFilesDestinationDirectory() != null ) {
       errorHandlers.add( new FileErrorHandlerMissingFiles(
         getTrans().getCurrentDate(), environmentSubstitute( meta.getErrorFilesDestinationDirectory() ), meta
-          .getErrorFilesExtension(), "Latin1", this ) );
+        .getErrorFilesExtension(), "Latin1", this ) );
     }
     data.errorHandler = new CompositeFileErrorHandler( errorHandlers );
   }
@@ -734,7 +726,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
       data.filePlayList =
         new FilePlayListReplay(
           replayDate, environmentSubstitute( meta.getLineNumberFilesDestinationDirectory() ), meta
-            .getLineNumberFilesExtension(),
+          .getLineNumberFilesExtension(),
           environmentSubstitute( meta.getErrorFilesDestinationDirectory() ), meta.getErrorFilesExtension(),
           "Latin1" );
     }
@@ -798,7 +790,6 @@ public class ExcelInput extends BaseStep implements StepInterface {
       } else {
         logError( BaseMessages.getString( PKG, "ExcelInput.Error.NotInputFieldsDefined" ) );
       }
-
     }
     return false;
   }
@@ -826,12 +817,6 @@ public class ExcelInput extends BaseStep implements StepInterface {
         logDebug( Const.getStackTracker( e ) );
       }
     }
-    try {
-      fpis.close();
-    } catch ( IOException e ) {
-      logDebug( Const.getStackTracker( e ) );
-    }
     super.dispose( smi, sdi );
   }
-
 }

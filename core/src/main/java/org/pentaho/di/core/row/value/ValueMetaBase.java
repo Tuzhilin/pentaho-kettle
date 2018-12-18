@@ -73,7 +73,9 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -117,7 +119,7 @@ public class ValueMetaBase implements ValueMetaInterface {
 
   public static final String COMPATIBLE_DATE_FORMAT_PATTERN = "yyyy/MM/dd HH:mm:ss.SSS";
 
-  public static final boolean EMPTY_STRING_AND_NULL_ARE_DIFFERENT = convertStringToBoolean(
+  public static final Boolean EMPTY_STRING_AND_NULL_ARE_DIFFERENT = convertStringToBoolean(
           Const.NVL( System.getProperty( Const.KETTLE_EMPTY_STRING_DIFFERS_FROM_NULL, "N" ), "N" ) );
 
   protected String name;
@@ -177,6 +179,8 @@ public class ValueMetaBase implements ValueMetaInterface {
   protected int originalNullable;
   protected boolean originalSigned;
 
+  protected final Comparator<Object> comparator;
+
   private static final LogChannelInterface log = KettleLogStore.getLogChannelInterfaceFactory().create( "ValueMetaBase" );
 
   /**
@@ -206,7 +210,15 @@ public class ValueMetaBase implements ValueMetaInterface {
     this( name, type, -1, -1 );
   }
 
+  public ValueMetaBase( String name, int type, Comparator<Object> comparator ) {
+    this( name, type, -1, -1, comparator );
+  }
+
   public ValueMetaBase( String name, int type, int length, int precision ) {
+    this( name, type, length, precision, null );
+  }
+
+  public ValueMetaBase( String name, int type, int length, int precision, Comparator<Object> comparator ) {
     this.name = name;
     this.type = type;
     this.length = length;
@@ -230,6 +242,8 @@ public class ValueMetaBase implements ValueMetaInterface {
     this.ignoreTimezone =
       convertStringToBoolean( Const.NVL( System.getProperty( Const.KETTLE_COMPATIBILITY_DB_IGNORE_TIMEZONE, "N" ),
         "N" ) );
+
+    this.comparator = comparator;
 
     determineSingleByteEncoding();
     setDefaultConversionMask();
@@ -277,7 +291,7 @@ public class ValueMetaBase implements ValueMetaInterface {
                 break;
               default:
                 throw new KettleException( toString()
-                  + " : Unable to de-serialize indexe storage type from XML for data type " + getType() );
+                  + " : Unable to de-serialize index storage type from XML for data type " + getType() );
             }
           }
         }
@@ -733,7 +747,7 @@ public class ValueMetaBase implements ValueMetaInterface {
     this.caseInsensitive = caseInsensitive;
   }
 
-   /**
+  /**
    * @return the collatorDisabled
    */
   @Override
@@ -973,7 +987,14 @@ public class ValueMetaBase implements ValueMetaInterface {
     }
 
     try {
-      return getDecimalFormat( false ).format( number );
+      DecimalFormat format = getDecimalFormat( false );
+
+      // When conversion masks are different, we must ensure the number precision is not lost
+      if ( this.conversionMask != null && storageMetadata != null
+              && !this.conversionMask.equals( storageMetadata.getConversionMask() ) ) {
+        format.setMaximumFractionDigits( 50 );
+      }
+      return format.format( number );
     } catch ( Exception e ) {
       throw new KettleValueException( toString() + " : couldn't convert Number to String ", e );
     }
@@ -1045,8 +1066,13 @@ public class ValueMetaBase implements ValueMetaInterface {
       // Do we have a locale?
       //
       if ( dateFormatLocale == null || dateFormatLocale.equals( Locale.getDefault() ) ) {
-        dateFormat = new SimpleDateFormat( mask );
+        if ( mask != null ) {
+          dateFormat = new SimpleDateFormat( mask );
+        }
       } else {
+        if ( mask == null ) {
+          mask = dateFormat.toPattern();
+        }
         dateFormat = new SimpleDateFormat( mask, dateFormatLocale );
       }
 
@@ -1356,11 +1382,21 @@ public class ValueMetaBase implements ValueMetaInterface {
 
         if ( parsePosition.getIndex() < string.length() ) {
           throw new KettleValueException( toString()
-              + " : couldn't convert String to number : non-numeric character found at position "
-              + ( parsePosition.getIndex() + 1 ) + " for value [" + string + "]" );
+            + " : couldn't convert String to number : non-numeric character found at position "
+            + ( parsePosition.getIndex() + 1 ) + " for value [" + string + "]" );
         }
       }
+
+      // PDI-17366: Cannot simply cast a number to a BigDecimal,
+      //            If the Number is not a BigDecimal.
+      //
+      if ( number instanceof Double ) {
+        return BigDecimal.valueOf( number.doubleValue() );
+      } else if ( number instanceof Long ) {
+        return BigDecimal.valueOf( number.longValue() );
+      }
       return (BigDecimal) number;
+
     } catch ( Exception e ) {
       // We added this workaround for PDI-1824
       //
@@ -1390,8 +1426,8 @@ public class ValueMetaBase implements ValueMetaInterface {
     if ( Utils.isEmpty( string ) ) {
       return null;
     }
-    return Boolean.valueOf( "Y".equalsIgnoreCase( string ) || "TRUE".equalsIgnoreCase( string )
-        || "YES".equalsIgnoreCase( string ) || "1".equals( string ) );
+    return "Y".equalsIgnoreCase( string ) || "TRUE".equalsIgnoreCase( string )
+      || "YES".equalsIgnoreCase( string ) || "1".equals( string );
   }
 
   // BOOLEAN + NUMBER
@@ -3623,6 +3659,23 @@ public class ValueMetaBase implements ValueMetaInterface {
     }
 
     int cmp = 0;
+
+    //If a comparator is not provided, default to the type comparisons
+    if ( comparator == null ) {
+      cmp = typeCompare( data1, data2 );
+    } else {
+      cmp = comparator.compare( data1, data2 );
+    }
+
+    if ( isSortedDescending() ) {
+      return -cmp;
+    } else {
+      return cmp;
+    }
+  }
+
+  private int typeCompare( Object data1, Object data2 ) throws KettleValueException {
+    int cmp = 0;
     switch ( getType() ) {
       case TYPE_STRING:
         // if (isStorageBinaryString() && identicalFormat &&
@@ -3690,14 +3743,10 @@ public class ValueMetaBase implements ValueMetaInterface {
         break;
       default:
         throw new KettleValueException( toString() + " : Comparing values can not be done with data type : "
-            + getType() );
+          + getType() );
     }
+    return cmp;
 
-    if ( isSortedDescending() ) {
-      return -cmp;
-    } else {
-      return cmp;
-    }
   }
 
   /**
@@ -3735,7 +3784,7 @@ public class ValueMetaBase implements ValueMetaInterface {
           case STORAGE_TYPE_NORMAL:
             return compare( data1, meta2.convertToNormalStorageType( data2 ) );
           case STORAGE_TYPE_BINARY_STRING:
-            if ( storageMetadata != null && storageMetadata.getConversionMask() != null ) {
+            if ( storageMetadata != null && storageMetadata.getConversionMask() != null && !meta2.isNumber() ) {
               // BACKLOG-18754 - if there is a storage conversion mask, we should use
               // it as the mask for meta2 (meta2 can have specific storage type and type, so
               // it can't be used directly to convert data2 to binary string)
@@ -3791,6 +3840,7 @@ public class ValueMetaBase implements ValueMetaInterface {
   @Override
   public Object convertData( ValueMetaInterface meta2, Object data2 ) throws KettleValueException {
     switch ( getType() ) {
+      case TYPE_NONE:
       case TYPE_STRING:
         return meta2.getString( data2 );
       case TYPE_NUMBER:
@@ -3885,6 +3935,8 @@ public class ValueMetaBase implements ValueMetaInterface {
         return getBoolean( data );
       case TYPE_BINARY:
         return getBinary( data );
+      case TYPE_TIMESTAMP:
+        return getDate( data );
       default:
         throw new KettleValueException( toString() + " : I can't convert the specified value to data type : "
             + conversionMetadata.getType() );
@@ -4072,6 +4124,15 @@ public class ValueMetaBase implements ValueMetaInterface {
         case TYPE_BIGNUMBER:
           hash ^= 32;
           break;
+        case TYPE_BINARY:
+          hash ^= 64;
+          break;
+        case TYPE_TIMESTAMP:
+          hash ^= 128;
+          break;
+        case TYPE_INET:
+          hash ^= 256;
+          break;
         case TYPE_NONE:
           break;
         default:
@@ -4096,6 +4157,15 @@ public class ValueMetaBase implements ValueMetaInterface {
           break;
         case TYPE_BIGNUMBER:
           hash ^= getBigNumber( object ).hashCode();
+          break;
+        case TYPE_BINARY:
+          hash ^= Arrays.hashCode( (byte[]) object );
+          break;
+        case TYPE_TIMESTAMP:
+          hash ^= ((Timestamp) object ).hashCode();
+          break;
+        case TYPE_INET:
+          hash ^= ((InetAddress) object ).hashCode();
           break;
         case TYPE_NONE:
           break;
@@ -4647,30 +4717,30 @@ public class ValueMetaBase implements ValueMetaInterface {
           if ( signed ) {
             valtype = ValueMetaInterface.TYPE_INTEGER;
             precision = 0; // Max 9.223.372.036.854.775.807
-            length = 15;
+            length = 18; // it is the lie! but will produce int8 field on output
           } else {
             valtype = ValueMetaInterface.TYPE_BIGNUMBER;
             precision = 0; // Max 18.446.744.073.709.551.615
-            length = 16;
+            length = 19;
           }
           break;
 
         case java.sql.Types.INTEGER:
           valtype = ValueMetaInterface.TYPE_INTEGER;
           precision = 0; // Max 2.147.483.647
-          length = 9;
+          length = 9; // it is the lie! but will produce int4 field on output
           break;
 
         case java.sql.Types.SMALLINT:
           valtype = ValueMetaInterface.TYPE_INTEGER;
           precision = 0; // Max 32.767
-          length = 4;
+          length = 4; // it is the lie! but will produce small int field on output
           break;
 
         case java.sql.Types.TINYINT:
           valtype = ValueMetaInterface.TYPE_INTEGER;
           precision = 0; // Max 127
-          length = 2;
+          length = 2; // it is the lie! but will produce tiny int field on output
           break;
 
         case java.sql.Types.DECIMAL:
@@ -4715,6 +4785,7 @@ public class ValueMetaBase implements ValueMetaInterface {
               valtype = ValueMetaInterface.TYPE_BIGNUMBER;
             }
           } else {
+        	// DECIMAL/NUMERIC
             if ( precision == 0 ) {
               if ( length <= 18 && length > 0 ) { // Among others Oracle is affected
                 // here.
@@ -5029,14 +5100,14 @@ public class ValueMetaBase implements ValueMetaInterface {
           }
           break;
         case ValueMetaInterface.TYPE_STRING:
-          if ( getLength() < databaseMeta.getMaxTextFieldLength() ) {
-            if ( !isNull( data ) ) {
+          if ( !isNull( data ) ) {
+            if ( getLength() == DatabaseMeta.CLOB_LENGTH ) {
+              setLength( databaseMeta.getMaxTextFieldLength() );
+            }
+
+            if ( getLength() <= databaseMeta.getMaxTextFieldLength() ) {
               preparedStatement.setString( index, getString( data ) );
             } else {
-              preparedStatement.setNull( index, java.sql.Types.VARCHAR );
-            }
-          } else {
-            if ( !isNull( data ) ) {
               String string = getString( data );
 
               int maxlen = databaseMeta.getMaxTextFieldLength();
@@ -5051,14 +5122,13 @@ public class ValueMetaBase implements ValueMetaInterface {
               }
 
               if ( databaseMeta.supportsSetCharacterStream() ) {
-                StringReader sr = new StringReader( string );
-                preparedStatement.setCharacterStream( index, sr, string.length() );
+                preparedStatement.setCharacterStream( index, new StringReader( string ), string.length() );
               } else {
                 preparedStatement.setString( index, string );
               }
-            } else {
-              preparedStatement.setNull( index, java.sql.Types.VARCHAR );
             }
+          } else {
+            preparedStatement.setNull( index, java.sql.Types.VARCHAR );
           }
           break;
         case ValueMetaInterface.TYPE_DATE:

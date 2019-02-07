@@ -344,8 +344,8 @@ public class OracleDatabaseMeta extends BaseDatabaseMeta implements DatabaseInte
     // drop the old column
     sql += getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon ) + ";" + Const.CR;
     // use rename instead of add/update/drop
-    sql += "ALTER TABLE " + tablename + " RENAME COLUMN " + tmpColumn.getName() + " TO " + v.getName() + ";" + Const.CR;
-
+    sql += "ALTER TABLE " + tablename + " RENAME COLUMN " + tmpColumn.getName() + " TO " + v.getName();
+    // final semicolon is added (optionally by DatabaseMeta)
     return sql;
   }
 

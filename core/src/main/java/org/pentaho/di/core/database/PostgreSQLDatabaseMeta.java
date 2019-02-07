@@ -292,7 +292,8 @@ public class PostgreSQLDatabaseMeta extends BaseDatabaseMeta implements Database
     // drop the old column
     retval += getDropColumnStatement( tablename, v, tk, use_autoinc, pk, semicolon ) + ";" + Const.CR;
     // rename the temp column to replace the removed column
-    retval += "ALTER TABLE " + tablename + " RENAME " + tmpColumn.getName() + " TO " + v.getName() + ";" + Const.CR;
+    retval += "ALTER TABLE " + tablename + " RENAME " + tmpColumn.getName() + " TO " + v.getName();
+    // final semicolon is added (optionally by DatabaseMeta)
     return retval;
   }
 

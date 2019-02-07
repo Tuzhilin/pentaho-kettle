@@ -100,6 +100,10 @@ public class RestData extends BaseStepData implements StepDataInterface {
 
   public MediaType mediaType;
 
+  /* TSW */
+  public int realConnectionTimeout;
+  public int realReadTimeout;
+
   public RestData() {
     super();
     this.indexOfUrlField = -1;

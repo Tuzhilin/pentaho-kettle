@@ -119,6 +119,16 @@ public class Rest extends BaseStep implements StepInterface {
       if ( data.basicAuthentication != null ) {
         client.addFilter( data.basicAuthentication );
       }
+      // TSW (у меня не работает на 8.8.8.8, но оставил на всякий случай, работает http.connection.timeout)
+      if ( data.realConnectionTimeout>0 ) {
+        client.setConnectTimeout(data.realConnectionTimeout);
+      }
+      if ( data.realReadTimeout>0 ) {
+        client.setReadTimeout(data.realReadTimeout);
+        if ( isDetailed() ) {
+            logDetailed( "... read timeout set to (ms): " + data.realReadTimeout );
+        }
+      }
       // create a WebResource object, which encapsulates a web resource for the client
       webResource = client.resource( data.realUrl );
 
@@ -288,6 +298,13 @@ public class Rest extends BaseStep implements StepInterface {
       if ( meta.isPreemptive() ) {
         data.config.getProperties().put( ApacheHttpClient4Config.PROPERTY_PREEMPTIVE_BASIC_AUTHENTICATION, true );
       }
+      if ( data.realConnectionTimeout>0 ) {
+          data.config.getProperties().put("http.connection.timeout", data.realConnectionTimeout);
+          // does not work data.config.getProperties().put( ApacheHttpClient4Config.PROPERTY_CONNECT_TIMEOUT, data.realConnectionTimeout );
+          if ( isDetailed() ) {
+              logDetailed( "... connection timeout set to (ms): " + data.realConnectionTimeout );
+          }
+        }
       // SSL TRUST STORE CONFIGURATION
       if ( !Utils.isEmpty( data.trustStoreFile ) ) {
         try ( FileInputStream trustFileStream = new FileInputStream( data.trustStoreFile ) ) {
@@ -495,6 +512,10 @@ public class Rest extends BaseStep implements StepInterface {
       data.realHttpLogin = environmentSubstitute( meta.getHttpLogin() );
       data.realHttpPassword = Encr.decryptPasswordOptionallyEncrypted( environmentSubstitute( meta.getHttpPassword() ) );
 
+      // TSW
+      data.realConnectionTimeout = Const.toInt( environmentSubstitute( meta.getConnectionTimeout() ), -1 );
+      data.realReadTimeout = Const.toInt( environmentSubstitute( meta.getReadTimeout() ), -1 );
+      
       if ( !meta.isDynamicMethod() ) {
         data.method = environmentSubstitute( meta.getMethod() );
         if ( Utils.isEmpty( data.method ) ) {

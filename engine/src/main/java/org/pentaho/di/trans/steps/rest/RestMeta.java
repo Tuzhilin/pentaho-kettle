@@ -128,6 +128,10 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
   private String trustStoreFile;
   private String trustStorePassword;
 
+  /* TSW */
+  private String connectionTimeout;
+  private String readTimeout;
+
   public RestMeta() {
     super(); // allocate BaseStepMeta
   }
@@ -478,6 +482,10 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
     retval.append( "    " ).append( XMLHandler.addTagValue( "proxyPort", proxyPort ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "preemptive", preemptive ) );
 
+    /* TSW */
+    retval.append( "    " + XMLHandler.addTagValue( "connectionTimeout", connectionTimeout ) );
+    retval.append( "    " + XMLHandler.addTagValue( "readTimeout", readTimeout ) );
+
     retval.append( "    " ).append( XMLHandler.addTagValue( "trustStoreFile", trustStoreFile ) );
     retval.append( "    " ).append(
         XMLHandler.addTagValue( "trustStorePassword", Encr.encryptPasswordIfNotUsingVariables( trustStorePassword ) ) );
@@ -537,6 +545,10 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
       proxyPort = XMLHandler.getTagValue( stepnode, "proxyPort" );
       preemptive = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "preemptive" ) );
 
+      /* TSW */
+      connectionTimeout = XMLHandler.getTagValue( stepnode, "connectionTimeout" );
+      readTimeout = XMLHandler.getTagValue( stepnode, "readTimeout" );
+
       trustStoreFile = XMLHandler.getTagValue( stepnode, "trustStoreFile" );
       trustStorePassword =
           Encr.decryptPasswordOptionallyEncrypted( XMLHandler.getTagValue( stepnode, "trustStorePassword" ) );
@@ -593,6 +605,10 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
       proxyHost = rep.getStepAttributeString( id_step, "proxyHost" );
       proxyPort = rep.getStepAttributeString( id_step, "proxyPort" );
 
+      /* TSW */
+      connectionTimeout = rep.getStepAttributeString( id_step, "connectionTimeout" );
+      readTimeout = rep.getStepAttributeString( id_step, "readTimeout" );
+
       trustStoreFile = rep.getStepAttributeString( id_step, "trustStoreFile" );
       trustStorePassword =
           Encr.decryptPasswordOptionallyEncrypted( rep.getStepAttributeString( id_step, "trustStorePassword" ) );
@@ -644,6 +660,10 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
 
       rep.saveStepAttribute( id_transformation, id_step, "proxyHost", proxyHost );
       rep.saveStepAttribute( id_transformation, id_step, "proxyPort", proxyPort );
+
+      /* TSW */
+      rep.saveStepAttribute( id_transformation, id_step, "connectionTimeout", connectionTimeout );
+      rep.saveStepAttribute( id_transformation, id_step, "readTimeout", readTimeout );
 
       rep.saveStepAttribute( id_transformation, id_step, "trustStoreFile", trustStoreFile );
       rep.saveStepAttribute( id_transformation, id_step, "trustStorePassword", Encr
@@ -926,4 +946,33 @@ public class RestMeta extends BaseStepMeta implements StepMetaInterface {
     return ( method.equals( HTTP_METHOD_POST ) || method.equals( HTTP_METHOD_PUT )
       || method.equals( HTTP_METHOD_PATCH ) || method.equals( HTTP_METHOD_DELETE ) );
   }
+
+  /**
+   * @return Returns the connectionTimeout.
+   */
+  public String getConnectionTimeout() {
+    return connectionTimeout;
+  }
+  /**
+   * @param connectionTimeout
+   *          The connectionTimeout to set.
+   */
+  public void setConnectionTimeout( String connectionTimeout ) {
+    this.connectionTimeout = connectionTimeout;
+  }
+
+  /**
+   * @return Returns the readTimeout.
+   */
+  public String getReadTimeout() {
+    return readTimeout;
+  }
+  /**
+   * @param readTimeout
+   *          The readTimeout to set.
+   */
+  public void setReadTimeout( String readTimeout ) {
+    this.readTimeout = readTimeout;
+  }
+
 }

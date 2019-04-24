@@ -280,7 +280,7 @@ public class Const {
   /**
    * The default locale for the kettle environment (system defined)
    */
-  public static final Locale DEFAULT_LOCALE = Locale.getDefault(); // new Locale("nl", "BE");
+  public static final Locale DEFAULT_LOCALE = Locale.getDefault();
 
   /**
    * The default decimal separator . or ,
@@ -1141,6 +1141,95 @@ public class Const {
    * {@linkplain org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder#USER_DIR_IS_ROOT}
    */
   public static final String VFS_USER_DIR_IS_ROOT = "vfs.sftp.userDirIsRoot";
+
+  /**
+   * <p>A variable to configure the minimum allowed ratio between de- and inflated bytes to detect a zipbomb.</p>
+   * <p>If not set or if the configured value is invalid, it defaults to {@value
+   * #KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT}</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT_STRING
+   */
+  public static final String KETTLE_ZIP_MIN_INFLATE_RATIO = "KETTLE_ZIP_MIN_INFLATE_RATIO";
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MIN_INFLATE_RATIO} as a Double.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT_STRING
+   */
+  public static final Double KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT = 0.01d;
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MIN_INFLATE_RATIO} as a String.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO
+   * @see #KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT
+   */
+  public static final String KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT_STRING =
+    String.valueOf( KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT );
+
+  /**
+   * <p>A variable to configure the maximum file size of a single zip entry.</p>
+   * <p>If not set or if the configured value is invalid, it defaults to {@value #KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT}</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT_STRING
+   */
+  public static final String KETTLE_ZIP_MAX_ENTRY_SIZE = "KETTLE_ZIP_MAX_ENTRY_SIZE";
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MAX_ENTRY_SIZE} as a Long.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT_STRING
+   */
+  public static final Long KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT = 0xFFFFFFFFL;
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MAX_ENTRY_SIZE} as a String.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE
+   * @see #KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT
+   */
+  public static final String KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT_STRING =
+    String.valueOf( KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT );
+
+  /**
+   * <p>A variable to configure the maximum number of characters of text that are extracted before an exception is
+   * thrown during extracting text from documents.</p>
+   * <p>If not set or if the configured value is invalid, it defaults to {@value #KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT}</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT_STRING
+   */
+  public static final String KETTLE_ZIP_MAX_TEXT_SIZE = "KETTLE_ZIP_MAX_TEXT_SIZE";
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MAX_TEXT_SIZE} as a Long.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT_STRING
+   */
+  public static final Long KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT = 10 * 1024 * 1024L;
+
+  /**
+   * <p>The default value for the {@link #KETTLE_ZIP_MAX_TEXT_SIZE} as a Long.</p>
+   * <p>Check PDI-17586 for more details.</p>
+   *
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE
+   * @see #KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT
+   */
+  public static final String KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT_STRING =
+    String.valueOf( KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT );
 
   /**
    * rounds double f to any number of places after decimal point Does arithmetic using BigDecimal class to avoid integer

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.apache.commons.vfs2.FileObject;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.ResultFile;
 import org.pentaho.di.core.RowSet;
@@ -75,6 +76,9 @@ public class ExcelInput extends BaseStep implements StepInterface {
   public ExcelInput( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
     Trans trans ) {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
+    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!");
+
+    setZipBombConfiguration();
   }
 
   /**
@@ -411,13 +415,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
       return false; // end of data or error.
     }
 
-    // also handle the case if we have a startRow == 0 and no headers and a row limit > 0
-    // in this case we have to stop a row "earlier", since we start a row number 0 !!!
-    if ( ( meta.getRowLimit() > 0 && data.rownr > meta.getRowLimit() )
-      || ( meta.readAllSheets() && meta.getRowLimit() > 0 && data.defaultStartRow == 0 && data.rownr > meta
-      .getRowLimit() - 1 )
-      || ( !meta.readAllSheets() && meta.getRowLimit() > 0 && data.startRow[data.sheetnr] == 0 && data.rownr > meta
-      .getRowLimit() - 1 ) ) {
+    if ( meta.getRowLimit() > 0 && getLinesInput() >= meta.getRowLimit() ) { // PDI-17765
       // The close of the openFile is in dispose()
       if ( log.isDetailed() ) {
         logDetailed( BaseMessages.getString( PKG, "ExcelInput.Log.RowLimitReached", "" + meta.getRowLimit() ) );
@@ -730,6 +728,51 @@ public class ExcelInput extends BaseStep implements StepInterface {
           environmentSubstitute( meta.getErrorFilesDestinationDirectory() ), meta.getErrorFilesExtension(),
           "Latin1" );
     }
+  }
+
+  /**
+   * This method is responsible for setting the configuration values that control how the ZipSecureFile class behaves
+   * when trying to detect zipbombs (check PDI-17586 for more details).
+   */
+  protected void setZipBombConfiguration() {
+
+    // The minimum allowed ratio between de- and inflated bytes to detect a zipbomb.
+    String minInflateRatioVariable =
+      EnvUtil
+        .getSystemProperty( Const.KETTLE_ZIP_MIN_INFLATE_RATIO, Const.KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT_STRING );
+System.out.println("minInflateRatioVariable="+minInflateRatioVariable);
+    double minInflateRatio;
+    try {
+      minInflateRatio = Double.parseDouble( minInflateRatioVariable );
+    } catch ( NullPointerException | NumberFormatException e ) {
+      minInflateRatio = Const.KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT;
+System.out.println(e);
+    }
+    System.out.println("minInflateRatio="+minInflateRatio);
+    ZipSecureFile.setMinInflateRatio( minInflateRatio );
+
+    // The maximum file size of a single zip entry.
+    String maxEntrySizeVariable =
+      EnvUtil.getSystemProperty( Const.KETTLE_ZIP_MAX_ENTRY_SIZE, Const.KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT_STRING );
+    long maxEntrySize;
+    try {
+      maxEntrySize = Long.parseLong( maxEntrySizeVariable );
+    } catch ( NullPointerException | NumberFormatException e ) {
+      maxEntrySize = Const.KETTLE_ZIP_MAX_ENTRY_SIZE_DEFAULT;
+    }
+    ZipSecureFile.setMaxEntrySize( maxEntrySize );
+
+    // The maximum number of characters of text that are extracted before an exception is thrown during extracting
+    // text from documents.
+    String maxTextSizeVariable =
+      EnvUtil.getSystemProperty( Const.KETTLE_ZIP_MAX_TEXT_SIZE, Const.KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT_STRING );
+    long maxTextSize;
+    try {
+      maxTextSize = Long.parseLong( maxTextSizeVariable );
+    } catch ( NullPointerException | NumberFormatException e ) {
+      maxTextSize = Const.KETTLE_ZIP_MAX_TEXT_SIZE_DEFAULT;
+    }
+    ZipSecureFile.setMaxTextSize( maxTextSize );
   }
 
   public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {

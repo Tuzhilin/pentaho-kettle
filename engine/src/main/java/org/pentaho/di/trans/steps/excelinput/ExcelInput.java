@@ -76,8 +76,6 @@ public class ExcelInput extends BaseStep implements StepInterface {
   public ExcelInput( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
     Trans trans ) {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
-    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!");
-
     setZipBombConfiguration();
   }
 
@@ -740,15 +738,12 @@ public class ExcelInput extends BaseStep implements StepInterface {
     String minInflateRatioVariable =
       EnvUtil
         .getSystemProperty( Const.KETTLE_ZIP_MIN_INFLATE_RATIO, Const.KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT_STRING );
-System.out.println("minInflateRatioVariable="+minInflateRatioVariable);
     double minInflateRatio;
     try {
       minInflateRatio = Double.parseDouble( minInflateRatioVariable );
     } catch ( NullPointerException | NumberFormatException e ) {
       minInflateRatio = Const.KETTLE_ZIP_MIN_INFLATE_RATIO_DEFAULT;
-System.out.println(e);
     }
-    System.out.println("minInflateRatio="+minInflateRatio);
     ZipSecureFile.setMinInflateRatio( minInflateRatio );
 
     // The maximum file size of a single zip entry.

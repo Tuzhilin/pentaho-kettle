@@ -20,6 +20,8 @@
     <assembly.dir>${project.build.directory}/assembly</assembly.dir>
     <assembly.launcher.jar>pentaho-application-launcher-${pentaho-launcher.version}.jar</assembly.launcher.jar>
 
+    <kettle-plugins.dir>${project.build.directory}/../../../plugins</kettle-plugins.dir>
+
     <pdi-dataservice-driver-bundle.version>${project.version}</pdi-dataservice-driver-bundle.version>
     <ael.version>${project.version}</ael.version>
     <pdi-spark-driver.version>${project.version}</pdi-spark-driver.version>
@@ -1113,6 +1115,16 @@
                 <echo message="Moving unpacked dependencies to the right place..."/>
                 <move file="${assembly.dir}/system/pentaho-karaf-assembly" tofile="${assembly.dir}/system/karaf"/>
                 <move file="${assembly.dir}/pdi-websocket-daemon" tofile="${assembly.dir}/adaptive-execution"/>
+                <!-- replace with our versions -->
+                <echo message="Replacing unpacked plugins with our versions (-> ${assembly.dir}/system/karaf/system/org/pentaho/di/plugins) ..."/>
+                <copy file="${kettle-plugins.dir}/file-open-save/core/target/file-open-save-core-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/file-open-save-core/${project.version}"/>
+                <copy file="${kettle-plugins.dir}/meta-inject/target/meta-inject-plugin-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/meta-inject-plugin/${project.version}"/>
+                <copy file="${kettle-plugins.dir}/engine-configuration/api/target/pdi-engine-configuration-api-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/pdi-engine-configuration-api/${project.version}"/>
+                <copy file="${kettle-plugins.dir}/engine-configuration/impl/target/pdi-engine-configuration-impl-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/pdi-engine-configuration-impl/${project.version}"/>
+                <copy file="${kettle-plugins.dir}/engine-configuration/ui/target/pdi-engine-configuration-ui-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/pdi-engine-configuration-ui/${project.version}"/>
+                <copy file="${kettle-plugins.dir}/repositories/core/target/repositories-plugin-core-${project.version}.jar" todir="${assembly.dir}/system/karaf/system/org/pentaho/di/plugins/repositories-plugin-core/${project.version}"/>
+                <!-- translation -->>
+                <zip destfile="${assembly.dir}/lib/translations.jar" basedir="translations"/>
               </target>
             </configuration>
           </execution>
